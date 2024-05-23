@@ -392,22 +392,8 @@ class PlayState extends MusicBeatState
 		if(SONG.stage == null || SONG.stage.length < 1) {
 			switch (songName)
 			{
-				case 'spookeez' | 'south' | 'monster':
-					curStage = 'spooky';
-				case 'pico' | 'blammed' | 'philly' | 'philly-nice':
+				case 'blammed':
 					curStage = 'philly';
-				case 'milf' | 'satin-panties' | 'high':
-					curStage = 'limo';
-				case 'cocoa' | 'eggnog':
-					curStage = 'mall';
-				case 'winter-horrorland':
-					curStage = 'mallEvil';
-				case 'senpai' | 'roses':
-					curStage = 'school';
-				case 'thorns':
-					curStage = 'schoolEvil';
-				case 'ugh' | 'guns' | 'stress':
-					curStage = 'tank';
 				case 'arena':
 					curStage = "crash";
 				default:
@@ -589,83 +575,14 @@ class PlayState extends MusicBeatState
 
 		(SONG.player2.toLowerCase().startsWith("gf")) ? add(dadGroup) : addInFront(dadGroup, boyfriendGroup);
 		add(boyfriendGroup);
-
-		#if LUA_ALLOWED
-		luaDebugGroup = new FlxTypedGroup<DebugLuaText>();
-		luaDebugGroup.cameras = [camOther];
-		add(luaDebugGroup);
-		#end
-
-		// "GLOBAL" SCRIPTS
-		#if LUA_ALLOWED
-		var filesPushed:Array<String> = [];
-		var foldersToCheck:Array<String> = [Paths.getPreloadPath('scripts/')];
-
-		#if MODS_ALLOWED
-		foldersToCheck.insert(0, Paths.mods('scripts/'));
-		if(Paths.currentModDirectory != null && Paths.currentModDirectory.length > 0)
-			foldersToCheck.insert(0, Paths.mods(Paths.currentModDirectory + '/scripts/'));
-
-		for(mod in Paths.getGlobalMods())
-			foldersToCheck.insert(0, Paths.mods(mod + '/scripts/'));
-		#end
-
-		for (folder in foldersToCheck)
-		{
-			if(FileSystem.exists(folder))
-			{
-				for (file in FileSystem.readDirectory(folder))
-				{
-					if(file.endsWith('.lua') && !filesPushed.contains(file))
-					{
-						luaArray.push(new FunkinLua(folder + file));
-						filesPushed.push(file);
-					}
-				}
-			}
-		}
-		#end
-
-
-		// STAGE SCRIPTS
-		#if (MODS_ALLOWED && LUA_ALLOWED)
-		var doPush:Bool = false;
-		var luaFile:String = 'stages/' + curStage + '.lua';
-		if(FileSystem.exists(Paths.modFolders(luaFile))) {
-			luaFile = Paths.modFolders(luaFile);
-			doPush = true;
-		} else {
-			luaFile = Paths.getPreloadPath(luaFile);
-			if(FileSystem.exists(luaFile)) {
-				doPush = true;
-			}
-		}
-
-		if(doPush)
-			luaArray.push(new FunkinLua(luaFile));
-		#end
-
+		
 		var gfVersion:String = SONG.gfVersion;
 		if(gfVersion == null || gfVersion.length < 1)
 		{
 			switch (curStage)
 			{
-				case 'limo':
-					gfVersion = 'gf-car';
-				case 'mall' | 'mallEvil':
-					gfVersion = 'gf-christmas';
-				case 'school' | 'schoolEvil':
-					gfVersion = 'gf-pixel';
-				case 'tank':
-					gfVersion = 'gf-tankmen';
 				default:
 					gfVersion = 'gf';
-			}
-
-			switch(Paths.formatToSongPath(SONG.song))
-			{
-				case 'stress':
-					gfVersion = 'pico-speaker';
 			}
 			SONG.gfVersion = gfVersion; //Fix for the Chart Editor
 		}
@@ -678,27 +595,6 @@ class PlayState extends MusicBeatState
 			gf.scrollFactor.set(0.95, 0.95);
 			gfGroup.add(gf);
 			startCharacterLua(gf.curCharacter);
-
-			if(gfVersion == 'pico-speaker')
-			{
-				if(!ClientPrefs.lowQuality)
-				{
-					var firstTank:TankmenBG = new TankmenBG(20, 500, true);
-					firstTank.resetShit(20, 600, true);
-					firstTank.strumTime = 10;
-					tankmanRun.add(firstTank);
-
-					for (i in 0...TankmenBG.animationNotes.length)
-					{
-						if(FlxG.random.bool(16)) {
-							var tankBih = tankmanRun.recycle(TankmenBG);
-							tankBih.strumTime = TankmenBG.animationNotes[i][0];
-							tankBih.resetShit(500, 200 + FlxG.random.int(50, 100), TankmenBG.animationNotes[i][1] < 2);
-							tankmanRun.add(tankBih);
-						}
-					}
-				}
-			}
 		}
 
 		dad = new Character(0, 0, SONG.player2);
@@ -800,69 +696,16 @@ class PlayState extends MusicBeatState
 		grpNoteSplashes.add(splash);
 		splash.alpha = 0.0;
 
+		StrumNote.frozenFrames = Paths.getSparrowAtlas("NOTE_ICED");
 		opponentStrums = new FlxTypedGroup<StrumNote>();
 		playerStrums = new FlxTypedGroup<StrumNote>();
 
-		// startCountdown();
-
 		generateSong(SONG.song);
-		#if LUA_ALLOWED
-		for (notetype in noteTypeMap.keys())
-		{
-			#if MODS_ALLOWED
-			var luaToLoad:String = Paths.modFolders('custom_notetypes/' + notetype + '.lua');
-			if(FileSystem.exists(luaToLoad))
-			{
-				luaArray.push(new FunkinLua(luaToLoad));
-			}
-			else
-			{
-				luaToLoad = Paths.getPreloadPath('custom_notetypes/' + notetype + '.lua');
-				if(FileSystem.exists(luaToLoad))
-				{
-					luaArray.push(new FunkinLua(luaToLoad));
-				}
-			}
-			#elseif sys
-			var luaToLoad:String = Paths.getPreloadPath('custom_notetypes/' + notetype + '.lua');
-			if(OpenFlAssets.exists(luaToLoad))
-			{
-				luaArray.push(new FunkinLua(luaToLoad));
-			}
-			#end
-		}
-		for (event in eventPushedMap.keys())
-		{
-			#if MODS_ALLOWED
-			var luaToLoad:String = Paths.modFolders('custom_events/' + event + '.lua');
-			if(FileSystem.exists(luaToLoad))
-			{
-				luaArray.push(new FunkinLua(luaToLoad));
-			}
-			else
-			{
-				luaToLoad = Paths.getPreloadPath('custom_events/' + event + '.lua');
-				if(FileSystem.exists(luaToLoad))
-				{
-					luaArray.push(new FunkinLua(luaToLoad));
-				}
-			}
-			#elseif sys
-			var luaToLoad:String = Paths.getPreloadPath('custom_events/' + event + '.lua');
-			if(OpenFlAssets.exists(luaToLoad))
-			{
-				luaArray.push(new FunkinLua(luaToLoad));
-			}
-			#end
-		}
-		#end
+
 		noteTypeMap.clear();
 		noteTypeMap = null;
 		eventPushedMap.clear();
 		eventPushedMap = null;
-
-		// After all characters being loaded, it makes then invisible 0.01s later so that the player won't freeze when you change characters
-		// add(strumLine);
 
 		camFollow = new FlxPoint();
 		camFollowPos = new FlxObject(0, 0, 1, 1);
@@ -881,7 +724,6 @@ class PlayState extends MusicBeatState
 		add(camFollowPos);
 
 		FlxG.camera.follow(camFollowPos, LOCKON, 1);
-		// FlxG.camera.setScrollBounds(0, FlxG.width, 0, FlxG.height);
 		FlxG.camera.zoom = defaultCamZoom;
 		FlxG.camera.focusOn(camFollow);
 
@@ -955,42 +797,7 @@ class PlayState extends MusicBeatState
 		timeTxt.cameras = [camHUD];
 		doof.cameras = [camHUD];
 
-		// if (SONG.song == 'South')
-		// FlxG.camera.alpha = 0.7;
-		// UI_camera.zoom = 1;
-
-		// cameras = [FlxG.cameras.list[1]];
 		startingSong = true;
-
-		// SONG SPECIFIC SCRIPTS
-		#if LUA_ALLOWED
-		var filesPushed:Array<String> = [];
-		var foldersToCheck:Array<String> = [Paths.getPreloadPath('data/' + Paths.formatToSongPath(SONG.song) + '/')];
-
-		#if MODS_ALLOWED
-		foldersToCheck.insert(0, Paths.mods('data/' + Paths.formatToSongPath(SONG.song) + '/'));
-		if(Paths.currentModDirectory != null && Paths.currentModDirectory.length > 0)
-			foldersToCheck.insert(0, Paths.mods(Paths.currentModDirectory + '/data/' + Paths.formatToSongPath(SONG.song) + '/'));
-
-		for(mod in Paths.getGlobalMods())
-			foldersToCheck.insert(0, Paths.mods(mod + '/data/' + Paths.formatToSongPath(SONG.song) + '/' ));// using push instead of insert because these should run after everything else
-		#end
-
-		for (folder in foldersToCheck)
-		{
-			if(FileSystem.exists(folder))
-			{
-				for (file in FileSystem.readDirectory(folder))
-				{
-					if(file.endsWith('.lua') && !filesPushed.contains(file))
-					{
-						luaArray.push(new FunkinLua(folder + file));
-						filesPushed.push(file);
-					}
-				}
-			}
-		}
-		#end
 
 		var daSong:String = Paths.formatToSongPath(curSong);
 		if (daSong == "blammed-remix")
@@ -1276,7 +1083,6 @@ class PlayState extends MusicBeatState
 	{
 		// TO DO: Make this more flexible, maybe?
 		if(psychDialogue != null) return;
-		
 
 		var curL = Paths.currentLevel;
 		Paths.setCurrentLevel("weekAlloy");
@@ -2213,6 +2019,10 @@ class PlayState extends MusicBeatState
 				var dunceNote:Note = unspawnNotes.shift();
 				notes.insert(0, dunceNote);
 				dunceNote.spawned = true;
+
+				if (spawnFrozen && !dunceNote.isSustainNote) {
+					freezeNote(dunceNote);
+				}
 			}
 		}
 		
@@ -2823,6 +2633,15 @@ class PlayState extends MusicBeatState
 		}
 	}
 
+	var spawnFrozen:Bool = false;
+
+	function freezeNote(note:Note) @:privateAccess {
+		if (note._frozenFrames == null)
+			note._frozenFrames = StrumNote.frozenFrames;
+		if (note.mustPress)
+			note.frozen = true;
+	}
+
 	function freeze()
 	{
 		var animName = boyfriend.curAnimName;
@@ -2830,27 +2649,16 @@ class PlayState extends MusicBeatState
 		FlxG.sound.play(Paths.sound("TrueFreeze"));
 		boyfriend.playAnim((animName == "idle") ? "singUP" : animName);
 
-		var frames:FlxFramesCollection = null;
-		
-		playerStrums.forEach((strum) -> strum.frozen = true);
-		@:privateAccess
-		frames = playerStrums.getFirstAlive()._frozenFrames;
-		notes.forEach(function(note)
-		{
-			@:privateAccess
-			if (note._frozenFrames == null)
-				note._frozenFrames = frames;
-			if (note.mustPress)
-				note.frozen = true;
-		});
-		for (note in unspawnNotes)
-		{
-			@:privateAccess
-			if (note._frozenFrames == null)
-				note._frozenFrames = frames;
-			if (note.mustPress)
-				note.frozen = true;
+		for (i in 0...playerStrums.members.length) {
+			playerStrums.members[i].frozen = true;
 		}
+
+		for (note in notes.members) {
+			if (!note.isSustainNote)
+				freezeNote(note);
+		}
+
+		spawnFrozen = true;
 	}
 
 	function unfreeze()
@@ -2869,6 +2677,17 @@ class PlayState extends MusicBeatState
 			frozen.alpha = alp;
 		});
 		boyfriend.alloyShootEvent = true;
+
+		spawnFrozen = false;
+
+		for (i in 0...playerStrums.members.length) {
+			playerStrums.members[i].frozen = false;
+		}
+
+		for (note in notes.members) {
+			if (note.mustPress && !note.isSustainNote)
+				note.frozen = false;
+		}
 	}
 
 	function moveCameraSection():Void {
@@ -2990,9 +2809,10 @@ class PlayState extends MusicBeatState
 		if(achievementObj != null) {
 			return;
 		} else {
-			var achieve:String = checkForAchievement(['week1_nomiss', 'week2_nomiss', 'week3_nomiss', 'week4_nomiss',
-				'week5_nomiss', 'week6_nomiss', 'week7_nomiss', 'ur_bad',
-				'ur_good', 'hype', 'two_keys', 'toastie', 'debugger']);
+			var achieve:String = checkForAchievement([
+				'week1_nomiss', 'week2_nomiss','ur_bad',
+				'ur_good', 'hype', 'two_keys', 'toastie', 'debugger'
+			]);
 
 			if(achieve != null) {
 				startAchievement(achieve);
@@ -3008,11 +2828,13 @@ class PlayState extends MusicBeatState
 			
 			if (OpenFlAssets.exists(postDialogue))
 			{
-				healthBarBG.alpha = 0;
-				healthBar.alpha = 0;
-				scoreTxt.alpha = 0;
-				iconP1.alpha = 0;
-				iconP2.alpha = 0;
+				healthBarBG.visible = false;
+				healthBar.visible = false;
+				scoreTxt.visible = false;
+				iconP1.visible = false;
+				iconP2.visible = false;
+				playerStrums.visible = false;
+				opponentStrums.visible = false;
 				
 				startDialogue(DialogueBoxPsych.parseDialogue(postDialogue));
 				return;
@@ -3077,18 +2899,6 @@ class PlayState extends MusicBeatState
 					trace('LOADING NEXT SONG');
 					trace(Paths.formatToSongPath(PlayState.storyPlaylist[0]) + difficulty);
 
-					var winterHorrorlandNext = (Paths.formatToSongPath(SONG.song) == "eggnog");
-					if (winterHorrorlandNext)
-					{
-						var blackShit:FlxSprite = new FlxSprite(-FlxG.width * FlxG.camera.zoom,
-							-FlxG.height * FlxG.camera.zoom).makeGraphic(FlxG.width * 3, FlxG.height * 3, FlxColor.BLACK);
-						blackShit.scrollFactor.set();
-						add(blackShit);
-						camHUD.visible = false;
-
-						FlxG.sound.play(Paths.sound('Lights_Shut_off'));
-					}
-
 					FlxTransitionableState.skipNextTransIn = true;
 					FlxTransitionableState.skipNextTransOut = true;
 
@@ -3098,19 +2908,10 @@ class PlayState extends MusicBeatState
 					PlayState.SONG = Song.loadFromJson(PlayState.storyPlaylist[0] + difficulty, PlayState.storyPlaylist[0]);
 					FlxG.sound.music.stop();
 
-					if(winterHorrorlandNext) {
-						new FlxTimer().start(1.5, function(tmr:FlxTimer) {
-							cancelMusicFadeTween();
-							LoadingState.loadAndSwitchState(new PlayState());
-							NoteSplash.texturesLoaded = [];
-
-						});
-					} else {
-						NoteSplash.texturesLoaded = [];
-
-						cancelMusicFadeTween();
-						LoadingState.loadAndSwitchState(new PlayState());
-					}
+					
+					NoteSplash.texturesLoaded = [];
+					cancelMusicFadeTween();
+					LoadingState.loadAndSwitchState(new PlayState());
 				}
 			}
 			else
@@ -3575,10 +3376,6 @@ class PlayState extends MusicBeatState
 					return;
 				}
 				unfreeze();
-
-				notes.forEach((note) -> note.frozen = false);
-				for (note in unspawnNotes) note.frozen = false;
-				playerStrums.forEach((strum) -> strum.frozen = false);
 			}
 			else
 				freeze();
@@ -3791,20 +3588,7 @@ class PlayState extends MusicBeatState
 						else
 						{
 							unfreeze();
-
 							note.noteType = 'Hey!';
-
-							notes.forEach(function(note) 
-							{
-								if (note.mustPress)
-									note.frozen = false;
-							});
-							for (note in unspawnNotes) 
-							{
-								if (note.mustPress)
-									note.frozen = false;
-							}
-							playerStrums.forEach((strum) -> strum.frozen = false);
 						}
 					}
 					

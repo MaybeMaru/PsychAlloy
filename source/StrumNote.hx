@@ -119,15 +119,19 @@ class StrumNote extends FlxSprite
 		x += ((FlxG.width / 2) * player);
 		ID = noteData;
 	}
+
+	public static var frozenFrames:FlxAtlasFrames;
+
 	function set_alloyEvent(event:Bool)
 	{
 		if (event)
 		{
 			if (alloyEvent) return event;
-			_frozenFrames = Paths.getSparrowAtlas("NOTE_ICED");
+			_frozenFrames = frozenFrames;
 		}
 		return alloyEvent = event;
 	}
+
 	function set_frozen(froze:Bool)
 	{
 		if (!alloyEvent) return false;
