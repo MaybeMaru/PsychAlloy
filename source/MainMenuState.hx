@@ -42,7 +42,6 @@ class MainMenuState extends MusicBeatState
 	var optionShit:Array<String> = [
 		'story_mode',
 		'freeplay',
-		#if MODS_ALLOWED 'mods', #end
 		#if ACHIEVEMENTS_ALLOWED 'awards', #end
 		'credits',
 		'options'
@@ -61,9 +60,6 @@ class MainMenuState extends MusicBeatState
 	override function create()
 	{
 		Paths.clearStoredMemory();
-		#if MODS_ALLOWED
-		Paths.pushGlobalMods();
-		#end
 		WeekData.loadTheFirstEnabledMod();
 
 		#if desktop
@@ -305,10 +301,7 @@ class MainMenuState extends MusicBeatState
 		{
 			if (!selectinLevels(choice.split("_")[0]))
 			{
-				if (choice == "mods")
-					MusicBeatState.switchState(new ModsMenuState());
-				else
-					MusicBeatState.switchState(new OptionsState());
+				MusicBeatState.switchState(new OptionsState());
 				return;
 			}
 			PlayState.isStoryMode = choice == "story_mode";
